@@ -4,33 +4,34 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
+from app.models import Questions, Answers, Tags, Like
 
 
-ANSWERS = [
-    {
-'title': f'Answer {i}',
-'text': f'Text for answer # {i}',
-'id': i,
-    } for i in range(10)
-]
+# ANSWERS = [
+#     {
+# 'title': f'Answer {i}',
+# 'text': f'Text for answer # {i}',
+# 'id': i,
+#     } for i in range(10)
+# ]
+# TAGS = [
+#     {
+# 'title': f'tag{i}',
+# 'index': i
+#     } for i in range(10)
+# ] 
+# QUESTIONS = [
+#     {
+# 'title': f'Title {i}',
+# 'id': i,
+# 'text': f'Text for question # {i}',
+# 'tags': [TAGS[1], TAGS[5] , TAGS[(i%10)]],
+# 'answers': ANSWERS
+#     } for i in range(30)
+# ]
 
-TAGS = [
-    {
-'title': f'tag{i}',
-'index': i
-    } for i in range(10)
-] 
-
-QUESTIONS = [
-    {
-'title': f'Title {i}',
-'id': i,
-'text': f'Text for question # {i}',
-'tags': [TAGS[1], TAGS[5] , TAGS[(i%10)]],
-'answers': ANSWERS
-    } for i in range(30)
-]
-
+# fixed = {'best_profiles': Profile.objects.best(), 
+#             'popular_tags': Tags.objects.most_popular()}
 
 def paginator(object_list, request, per_page=10):
     required_page = []
@@ -38,32 +39,31 @@ def paginator(object_list, request, per_page=10):
     num_pages = paginator.num_pages
     page = request.GET.get('page')
     try:
-        required_page = paginator.page(page)
+        required_page = paginator.get_page(page)
     except PageNotAnInteger:
-        required_page = paginator.page(1)
+        required_page = paginator.get_page(1)
     except EmptyPage:
         if(required_page < 1):
-            required_page = paginator.page(1)
+            required_page = paginator.get_page(1)
         elif(required_page > num_pages):
-            required_page = paginator.page(num_pages)
+            required_page = paginator.get_page(num_pages)
     return required_page    
            
 
 def index(request):
     return render(request, template_name="index.html",
-                  context={'questions': paginator(QUESTIONS, request)})
+                  context={'questions': paginator(Questions.objects.new(), request)})
 
 def hot(request):
-    hot_questions = copy.deepcopy(QUESTIONS)
-    hot_questions.reverse()
     return render(request, template_name="hot.html",
-                  context={'questions': paginator(hot_questions, request)})
+                  context={'questions': paginator(Questions.objects.hot(), request)})
     
     
 def question(request, question_id):
-    one_question = QUESTIONS[question_id]
+    one_question = get_object_or_404(Questions, pk=question_id)
+    answers = Answers.objects.answers_for_question(question_id)
     return render(request, template_name="one-question.html",
-                  context={'question': one_question, 'answers': paginator(one_question['answers'], request, 5)})
+                  context={'question': one_question, 'answers': paginator(answers, request, 5)})
     
     
 def login(request):
@@ -84,15 +84,10 @@ def profile(request):
     return render(request, template_name='profile.html')
     
 def tag(request, tag_name):
-    tag = {'title': tag_name }
-    questions_tag = []
-    for q in QUESTIONS:
-        for t in q['tags']:
-            if t['title'] == tag_name:
-                questions_tag.append(q)
-                break
-    #questions_tag = [list(filter(lambda q: tag_name in q['tags'], QUESTIONS))]
+    tag = Tags.objects.get(title=tag_name)
     return render(request, 'tag.html',
-                  context={'tag': tag, 'questions': paginator(questions_tag, request)})
+                  context={'tag': tag, 'questions': paginator(Questions.objects.by_tag(tag_name), request)})
+
+
                   
 

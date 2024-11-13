@@ -24,7 +24,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('hot/', views.hot, name='hot'),
     path('ask/', views.ask, name='ask'),
-    path('tag/<slug:tag_name>', views.tag, name='tag'),
+    path('tag/<str:tag_name>', views.tag, name='tag'),
     path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(template_name='login.html'), name='logout'),
     path('signup/', views.signup, name='signup'),

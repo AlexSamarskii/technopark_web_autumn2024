@@ -12,10 +12,10 @@
   <div class="col-8">
 
     {% for question in questions %}
-      {% include "layouts/question.html" %}
+      {% include "components/question.html" %}
     {% endfor %}
 
-    {% include "layouts/pagination.html" with required_page=questions %}
+    {% include "components/pagination.html" with required_page=questions %}
 
   </div>
 {% endblock%}

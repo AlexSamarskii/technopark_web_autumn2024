@@ -11,7 +11,7 @@
             <div class="row g-0">
                 <div class="col-3 pe-3">
                     <div class="border w-150 mb-3" style="height: 150px">
-                        <img src={% static "img/cat.jpg" %} 
+                        <img src={% static 'img/cat.jpg' %}
                         class="img-fluid rounded-start" alt="..."/>
                     </div>
                     <div class="input-group flex-lg-nowrap">
@@ -21,15 +21,15 @@
                 <div class="col-9 ps-2">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <h2>{{ question.title }}</h2>
+                            <h2>{{question.title}}</h2>
                         </h5>
                         <p class="card-text mt-2">
-                            {{ question.text }}
+                            {{question.text}}
                         </p>
                         <div class="row">
                             <div class="col-8">
-                                <span>Tags</span>
-                                {% for tag in question.tags %}
+                                <span>Tags: </span>
+                                {% for tag in question.tags.all %}
                                     <a href="{% url 'tag' tag.title %}">{{tag.title}}</a>
                                 {% endfor %}
                             </div>
@@ -41,10 +41,10 @@
         <hr class="hr" />
 
             {% for answer in answers %}
-                {% include "layouts/answer.html" %}
+                {% include "components/answer.html" %}
             {% endfor %}      
 
-            {% include "layouts/pagination.html" with required_page=answers %}
+            {% include "components/pagination.html" with required_page=answers %}
 
         <hr class="hr" />
         <article class="form-floating">
@@ -54,6 +54,5 @@
                 <button class="btn btn-success" type="submit">Answer</button>
             </form>
         </article>
-
-        </div>
+    </div>
     {% endblock %}
