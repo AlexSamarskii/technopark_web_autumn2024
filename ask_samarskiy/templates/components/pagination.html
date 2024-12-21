@@ -8,7 +8,7 @@
         </li>
     {% endif %}
     {% if required_page.has_previous or required_page.has_next %}
-        {% for i in required_page.paginator.page_range %}
+        {% for i in required_page.paginator.page_number %}
             {% if i == required_page.number%}
                 <li class="page-item active"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
             {% else %}
@@ -16,7 +16,7 @@
             {% endif %}
         {% endfor %}
     {% endif %}
-    {% comment %} <li class="page-item"><a class="page-link">{{ required_page.number }}</a></li> {% endcomment %}
+    <li class="page-item"><a class="page-link">{{ required_page.number }}</a></li>
     {% if required_page.has_next %}
         <li class="page-item">
             <a class="page-link" href="?page={{ required_page.next_page_number }}">Next</a>

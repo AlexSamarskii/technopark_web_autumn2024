@@ -5,23 +5,22 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Count
 
 
-# Create your models here.
-
 class ProfileManager(models.Manager):
     def best(self):
-        return self.order_by('rating').all()[:1]
+        return self.order_by('-rating')[:5]
 
 class Profile(models.Model):
     objects = ProfileManager()
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(default='static/img/cat.jpg')
+    image = models.ImageField(upload_to='static/img/')
     rating = models.IntegerField(default=0)
 
 class TagManager(models.Manager):
     def most_popular(self):
-        return self.annotate(quest_count=Count('questions')).order_by('-quest_count').all()[:10]
+        return self.annotate(quest_count=Count('question')).order_by('-quest_count')[:10]
+        
 
-class Tags(models.Model):
+class Tag(models.Model):
     objects = TagManager()
     title = models.CharField(max_length=50)
     index = models.PositiveIntegerField(default=0)
@@ -40,14 +39,14 @@ class QuestionManager(models.Manager):
         return self.order_by('-likes')
     
             
-class Questions(models.Model):
+class Question(models.Model):
     objects = QuestionManager()
     title = models.CharField(max_length=255)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     likes = models.IntegerField(default=0)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    tags = models.ManyToManyField(Tags, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
         
     def __str__(self):
         return self.title
@@ -62,10 +61,10 @@ class Questions(models.Model):
     
 
 class AnswerManager(models.Manager):
-    def answers_for_question(self, id):
-        return self.filter(pk=id).all()
+    def answers_for_question(self, quest):
+        return self.filter(question=quest).all()
 
-class Answers(models.Model):
+class Answer(models.Model):
     objects = AnswerManager()
     title = models.CharField(max_length=255)
     text = models.TextField()
@@ -73,7 +72,7 @@ class Answers(models.Model):
     likes = models.IntegerField(default=0)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
     corect = models.BooleanField(default=False)
-    question = models.ForeignKey(Questions, on_delete=models.CASCADE, null=True)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, null=True)
     
     def __str__(self):
         return self.title
@@ -95,5 +94,5 @@ class Like(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     content_model = GenericForeignKey("content_type", "object_id")
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    sign = models.BooleanField(default=False)
-    
+    sign = models.BooleanField(default=True)
+

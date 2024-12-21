@@ -1,105 +1,93 @@
-import os
-from venv import faker
-os.environ.setdefault['DJANGO_SETTINGS_MODULE'] = 'ask_samarskiy.settings'
-from django.core.management.base import BaseCommand, CommandError
-from app.models import Profile, Tags, Questions, Answers, User, Like
-from random import randint, choice
+import random
+from django.core.management.base import BaseCommand
+from app.models import Profile, Question, Answer, Tag, Like
+from django.contrib.auth.models import User
+from datetime import datetime, timedelta
 
 
 class Command(BaseCommand):
 
     def add_arguments(self, parser):
-        parser.add_argument('--users', type=int, default=0)
-        parser.add_argument('--questions', type=int, default=0)
-        parser.add_argument('--answers', type=int, default=0)
+        parser.add_argument('ratio', type=int)
 
-    def create_profiles(self):
-        name = factory.Faker('name')
-        email = factory.Faker('email')
-        passwd = factory.fuzzy.FuzzyText(length=16)
-        for i in range(10):
-            user = User.objects.create_user(name.generate(), email.generate(), passwd.fuzz())
-            user.save()
-            p = Profile.objects.create(user=user)
-            p.save()
+    def create_profiles(self, ratio):
+        users = []
+        profiles = []
+        for i in range(ratio):
+            username = f'user_{i}'
+            rating = random.randint(1, 50)
+            user = User(username=username, password='qwerty')
+            users.append(user)
+            profiles.append(Profile(user=user, rating=rating, image='static/img/profile.jpg'))  
+        User.objects.bulk_create(users)  
+        Profile.objects.bulk_create(profiles)  
 
-    def create_tags(self):
-        tag_word = factory.fuzzy.FuzzyText(length=10)
-        for i in range(50):
-            tag = Tags.objects.create(title=tag_word, index=i)
-            tag.save()
+    def create_tags(self, ratio):
+        tags = [Tag(title=f'tag_{i}', index=i) for i in range(ratio)]
+        Tag.objects.bulk_create(tags) 
 
-    def create_questions(self):
-        tags = Tags.objects.all()
+    def create_questions(self, ratio):
+        questions = []
         profiles = Profile.objects.all()
-        titles = factory.fuzzy.FuzzyText(length=30)
-        text = factory.fuzzy.FuzzyText(length=100)
-        likes = factory.fuzzy.FuzzyInteger(-100,100)
-        for i in range(100):
-            question = Questions.objects.create(title=titles.fuzz(),
-                                               text=text.fuzz(),
-                                               author=choice(profiles),
-                                               likes=likes.fuzz())
-            tag_number = randint(1, 8)
-            for i in range(tag_number):
-                tag = choice(tags)
-                question.tags.add(tag)
-            question.save()
-
-    def create_answers(self):
-        profiles = Profile.objects.all()
-        text = factory.fuzzy.FuzzyText(length=100)
-        correct = factory.fuzzy.FuzzyChoice(choices=[True, False])
-        for question in Questions.objects.all():
-            answer_count = randint(1, 10)
-            for i in range(answer_count):
-                a = Answers.objects.create(text=text.fuzz(), question=question, correct=correct.fuzz(),
-                                          author=choice(profiles))
-                a.save()
-
-    def create_likes_obj(self, obj, profiles):
-        rating = obj.likes
-        if rating:
-            like_count = randint(abs(rating), 2 * abs(rating))
-            sign = rating / abs(rating)
-            opposite_max = like_count - abs(rating)
-            i = 0
-            profile_ind = 0
-            if sign > 0:
-                while i > -opposite_max:
-                    Like.objects.create(content_model=obj, sign=False,
-                                        author=profiles[profile_ind])
-                    i -= 1
-                    profile_ind += 1
-                while i < rating:
-                    Like.objects.create(content_model=obj, sign=True,
-                                        author=profiles[profile_ind])
-                    i += 1
-                    profile_ind += 1
-            else:
-                while i < opposite_max:
-                    Like.objects.create(content_model=obj, sign=True,
-                                        author=profiles[profile_ind])
-                    i += 1
-                    profile_ind += 1
-                while i > rating:
-                    Like.objects.create(content_model=obj, sign=False,
-                                        author=profiles[profile_ind])
-                    i -= 1
-                    profile_ind += 1
-
-    def create_likes(self):
-        profiles = Profile.objects.all()
-        questions = Questions.objects.all()
-        answers = Answers.objects.all()
+        tags = Tag.objects.all()
+        for i in range(ratio):
+            question = Question(
+                title=f'Question title {i}',
+                text='Question text.',
+                author=random.choice(profiles),
+                created_at = datetime.now() - timedelta(days=random.randint(0, 365)),
+                likes=random.randint(-20, 20),
+            )
+            questions.append(question)
+        Question.objects.bulk_create(questions) 
         for question in questions:
-            self.create_likes_obj(question, profiles)
-        for answer in answers:
-            self.create_likes_obj(answer, profiles)
+            tag_number = random.randint(1, 4)
+            for i in range(tag_number):
+                tag = random.choice(tags)
+                question.tags.add(tag)
+
+    def create_answers(self, ratio):
+        answers = []
+        questions = Question.objects.all()
+        profiles = Profile.objects.all()
+        for i in range(ratio):
+            answer = Answer(
+                title=f'Answer title {i}',
+                text='Answer text.',
+                question=random.choice(questions),
+                author=random.choice(profiles),
+                created_at=datetime.now() - timedelta(days=random.randint(0, 1825)),
+                corect=random.choice([True, False]),
+                likes=random.randint(-20, 20)
+            )
+            answers.append(answer)
+        Answer.objects.bulk_create(answers) 
+
+    def create_likes(self, ratio):
+        qlikes = []
+        alikes = []
+
+        profiles = Profile.objects.all()
+        questions = Question.objects.all()
+        answers = Answer.objects.all()
+        for i in range(ratio):
+            question = random.choice(questions)
+            qlikes.append(Like(author=random.choice(profiles),
+                                       content_model=question,
+                                       sign=True))
+            i+=1
+            if i == ratio: break
+            answer = random.choice(answers)
+            alikes.append(Like(author=random.choice(profiles),
+                                     content_model=answer,
+                                     sign=True))
+        Like.objects.bulk_create(qlikes, ignore_conflicts=True)
+        Like.objects.bulk_create(alikes, ignore_conflicts=True)  
 
     def handle(self, *args, **options):
-        self.create_profiles()
-        self.create_tags()
-        self.create_questions()
-        self.create_answers()
-        self.create_likes()
+        ratio = options['ratio']
+        self.create_profiles(ratio)
+        self.create_tags(ratio)
+        self.create_questions(ratio * 10)
+        self.create_answers(ratio * 100)
+        self.create_likes(ratio * 200)
